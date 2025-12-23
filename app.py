@@ -7,7 +7,7 @@ import datetime
 st.set_page_config(page_title="Z&J ka Chatbot", layout="centered")
 
 GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
-PDF_PATH = "data/Zeeshan_Chatbot_Company_Manual.pdf"
+PDF_PATH = "Academic-Policy-Manual-for-Students2.pdf"
 MODEL_NAME = "llama-3.1-8b-instant"
 
 
