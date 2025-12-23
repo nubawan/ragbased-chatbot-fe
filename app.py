@@ -5,7 +5,7 @@ import requests
 import datetime
 
 # -------------------- 1. BASIC SETUP --------------------
-st.set_page_config(page_title="Z&J ka Chatbot", layout="centered", page_icon="🤖")
+st.set_page_config(page_title="MIR KA CHATBOT", layout="centered", page_icon="🤖")
 
 # API Configuration from Secrets
 if "GROQ_API_KEY" in st.secrets:
@@ -105,10 +105,10 @@ def get_answer(question: str, history):
     
     # Prompt Engineering
     if not context.strip():
-        system_prompt = f"You are Z&J ka Chatbot. Rules: Direct answers, use updated general knowledge (Today: {today}). Do NOT say 'searching' or 'checking'. Never limit info to 2023."
+        system_prompt = f"You are MIR KA CHATBOT. Rules: Direct answers, use updated general knowledge (Today: {today}). Do NOT say 'searching' or 'checking'. Never limit info to 2023."
     else:
         system_prompt = f"""
-You are Z&J ka Chatbot. Use the following PDF context. If needed, blend in general knowledge (Today: {today}).
+You are MIR KA CHATBOT. Use the following PDF context. If needed, blend in general knowledge (Today: {today}).
 Rules: Confident answers. Do NOT say 'I am searching'. Never limit info to 2023.
 
 PDF Context:
@@ -124,7 +124,7 @@ PDF Context:
     return llama_chat(messages)
 
 # -------------------- 6. STREAMLIT UI --------------------
-st.title("🤖 Z&J ka Chatbot")
+st.title("🤖 MIR KA CHATBOT")
 
 # Clear History Button
 if st.sidebar.button("Clear Chat"):
@@ -134,7 +134,7 @@ if st.sidebar.button("Clear Chat"):
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "assistant",
-         "content": "Assalam o Alaikum! 👋 Main Z&J ka Chatbot hoon. Jo Bhi Phouchna Bindaas Phoucho Mai Ho Na Apki Madad Kay Liye"}
+         "content": "Assalam o Alaikum! 👋 Main MIR KA CHATBOT. AAO GAND MARAIN SATH"}
     ]
 
 # Display history
@@ -143,13 +143,13 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
 
 # User input
-if user_input := st.chat_input("Apna sawal likho..."):
+if user_input := st.chat_input("ASK ANYTHING..."):
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
 
     with st.chat_message("assistant"):
-        with st.spinner("Soch raha hoon..."):
+        with st.spinner("THINKING..."):
             answer = get_answer(user_input, st.session_state.messages[:-1])
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
