@@ -5,7 +5,7 @@ import requests
 import datetime
 
 # -------------------- 1. BASIC SETUP --------------------
-st.set_page_config(page_title="MIR KA CHATBOT", layout="centered", page_icon="🤖")
+st.set_page_config(page_title="MiRAG", layout="centered", page_icon="🤖")
 
 # API Configuration from Secrets
 if "GROQ_API_KEY" in st.secrets:
@@ -18,7 +18,7 @@ PDF_PATH = "Academic-Policy-Manual-for-Students2.pdf"
 MODEL_NAME = "llama-3.1-8b-instant"
 
 # -------------------- 2. LOAD + CHUNK PDF --------------------
-@st.cache_data(show_spinner="Z&J's Brain is loading the PDF...")
+@st.cache_data(show_spinner="MiRAG's Brain is loading the PDF...")
 def load_chunks(max_chars: int = 600):
     if not os.path.exists(PDF_PATH):
         return []  # Return empty if file is missing
@@ -108,7 +108,7 @@ def get_answer(question: str, history):
         system_prompt = f"You are MIR KA CHATBOT. Rules: Direct answers, use updated general knowledge (Today: {today}). Do NOT say 'searching' or 'checking'. Never limit info to 2023."
     else:
         system_prompt = f"""
-You are MIR KA CHATBOT. Use the following PDF context. If needed, blend in general knowledge (Today: {today}).
+You are MiRAG. Use the following PDF context. If needed, blend in general knowledge (Today: {today}).
 Rules: Confident answers. Do NOT say 'I am searching'. Never limit info to 2023.
 
 PDF Context:
@@ -124,7 +124,7 @@ PDF Context:
     return llama_chat(messages)
 
 # -------------------- 6. STREAMLIT UI --------------------
-st.title("🤖 MIR KA CHATBOT")
+st.title("🤖 MiRAG")
 
 # Clear History Button
 if st.sidebar.button("Clear Chat"):
@@ -134,7 +134,7 @@ if st.sidebar.button("Clear Chat"):
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "assistant",
-         "content": "Assalam o Alaikum! 👋 Main MIR KA CHATBOT. AAO GAND MARAIN SATH"}
+         "content": "Assalam o Alaikum! 👋 I am MiRAG-Mir MUHAMMAD Rafiqu's Chat Bot"}
     ]
 
 # Display history
