@@ -134,7 +134,7 @@ if st.sidebar.button("Clear Chat"):
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "assistant",
-         "content": "Assalam o Alaikum! 👋 I am MiRAG-Mir MUHAMMAD Rafiqu's Chat Bot"}
+         "content": "Assalam o Alaikum! 👋 I am MiRAG-Mir MUHAMMAD Rafique's Chat Bot"}
     ]
 
 # Display history
