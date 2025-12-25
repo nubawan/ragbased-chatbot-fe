@@ -1,2 +1,2 @@
 # MiRAG
-A RAG Based Chat Bot Using pthon And Stramlit
+A RAG Based Chat Bot Using python And Streamlit 
