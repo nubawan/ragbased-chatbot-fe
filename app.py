@@ -13,7 +13,7 @@ if "GROQ_API_KEY" in st.secrets:
 else:
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-# --- THE CORRECT PATH ---
+# --- THE PROPER PATH ---
 # This looks for the file in the same GitHub folder as this script
 PDF_FILENAME = "Academic-Policy-Manual-for-Students2.pdf"
 MODEL_NAME = "llama-3.1-8b-instant"
@@ -21,7 +21,7 @@ MODEL_NAME = "llama-3.1-8b-instant"
 # -------------------- 2. AUTOMATIC PDF INDEXING --------------------
 @st.cache_data(show_spinner="MiRAG is connecting to the Policy Manual...")
 def load_and_index_manual():
-    # Verify if the file exists in the GitHub/Main container
+    # Verify if the file exists in the container
     if not os.path.exists(PDF_FILENAME):
         return None
     
@@ -45,7 +45,7 @@ def load_and_index_manual():
         if current_chunk:
             chunks.append(current_chunk.strip())
         return chunks
-    except Exception as e:
+    except Exception:
         return None
 
 # Load chunks immediately
@@ -56,7 +56,6 @@ def get_context(query):
     if not policy_chunks:
         return ""
     
-    # Keyword search to find the relevant policy page
     query_words = set(query.lower().split())
     matches = []
     for chunk in policy_chunks:
@@ -73,15 +72,15 @@ def ask_mirag(question, history):
     
     # Identity Prompt for the group
     system_prompt = f"""
-    You are MiRAG, an Academic Assistant for Iqra University.
+    You are MiRAG, an Academic Assistant.
     Created by: Mir MUHAMMAD Rafique and Hasnain Ali Raza.
     Current Date: {today}.
     
     Use this Context from the Policy Manual:
     {context}
     
-    Instructions: Provide specific details (e.g., exact GPA numbers or percentage %). 
-    If information is missing from the manual, inform the user clearly.
+    Instructions: Provide precise details from the manual. 
+    If information is missing, inform the user clearly.
     """
 
     messages = [{"role": "system", "content": system_prompt}] + history + [{"role": "user", "content": question}]
@@ -94,24 +93,22 @@ def ask_mirag(question, history):
         )
         return response.json()["choices"][0]["message"]["content"]
     except:
-        return "⚠️ I am having trouble accessing my database. Check the API Key."
+        return "⚠️ Connection Error. Check the API Key in Secrets."
 
 # -------------------- 4. USER INTERFACE --------------------
 st.title("🤖 MiRAG: Academic AI")
-st.subheader("Mir MUHAMMAD Rafique & Hasnain Ali Raza")
+st.subheader("Developed by Mir MUHAMMAD Rafique & Hasnain Ali Raza")
 
-# Sidebar for Verification
 with st.sidebar:
     st.header("Connection Status")
     if policy_chunks:
         st.success(f"✅ Linked to {PDF_FILENAME}")
-        st.info(f"Loaded {len(policy_chunks)} Policy Sections")
     else:
-        st.error("❌ PDF Missing from GitHub")
-        st.write("Ensure the PDF is in the same folder as this code.")
+        st.error("❌ PDF Missing")
+        st.write(f"Ensure '{PDF_FILENAME}' is in the GitHub root folder.")
 
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Assalam o Alaikum! I am MiRAG. I am connected to your Academic Policy Manual. How can I help?"}]
+    st.session_state.messages = [{"role": "assistant", "content": "Assalam o Alaikum! I am MiRAG. I am connected to the Academic Policy Manual. Ask me anything!"}]
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
