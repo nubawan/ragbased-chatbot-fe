@@ -33,14 +33,14 @@ Get your free API key from [console.groq.com](https://console.groq.com/keys).
 ### Run Locally
 
 ```bash
-streamlit run app.py
+streamlit run streamlit_app.py
 ```
 
 ## Architecture
 
 ```
 Z.M.AI/
-├── app.py                 # Main entry point
+├── streamlit_app.py       # Main entry point
 ├── config/                # Configuration management
 │   └── settings.py        # Dynamic settings with env var support
 ├── core/                  # RAG pipeline components
