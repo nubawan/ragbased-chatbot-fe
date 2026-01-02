@@ -6,27 +6,45 @@ import datetime
 # -------------------- 1. BRANDING & CONFIG --------------------
 st.set_page_config(page_title="MiRAG | Chat", layout="centered", page_icon="💬")
 
-# Securely fetch API Key from Streamlit Secrets
+# Fetch API Key
 if "GROQ_API_KEY" in st.secrets:
     GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 else:
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
+# --- PROPER PATH LOGIC ---
+# This defines the base directory where your script is located
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_NAME = "llama-3.1-8b-instant"
 
-# -------------------- 2. CHAT INTELLIGENCE --------------------
+# -------------------- 2. SIDEBAR (PROJECT DETAILS) --------------------
+with st.sidebar:
+    st.title("🤖 MiRAG Bot")
+    st.markdown("---")
+    st.markdown("### **Project Info**")
+    st.write(f"**Location:** `{BASE_DIR}`") # Shows the system path
+    st.write("**Status:** ✅ Online")
+    
+    st.markdown("---")
+    st.markdown("### **Developed By:**")
+    st.info("👤 Mir MUHAMMAD Rafique\n\n👤 Hasnain Ali Raza")
+    
+    if st.button("🗑️ Clear Conversation"):
+        st.session_state.messages = []
+        st.rerun()
+
+# -------------------- 3. CHAT LOGIC --------------------
 def mirag_chat(question, history):
     today = datetime.datetime.now().strftime("%d %B %Y")
     
-    # This prompt tells the AI who created it and how to behave
+    # The system prompt defines the bot's personality
     system_prompt = f"""
-    You are MiRAG, a friendly and helpful AI assistant created by 
-    Mir MUHAMMAD Rafique and Hasnain Ali Raza. 
-    Current Date: {today}. 
-    Your goal is to have a natural conversation, answer questions, and be polite.
+    You are MiRAG, a helpful AI assistant.
+    Created by: Mir MUHAMMAD Rafique and Hasnain Ali Raza.
+    Current Date: {today}.
+    Instructions: Be polite, conversational, and assist the user with any topic.
     """
 
-    # Combine system prompt with conversation history
     messages = [{"role": "system", "content": system_prompt}] + history + [{"role": "user", "content": question}]
 
     try:
@@ -36,42 +54,34 @@ def mirag_chat(question, history):
             headers={"Authorization": f"Bearer {GROQ_API_KEY}"}
         )
         return response.json()["choices"][0]["message"]["content"]
-    except:
-        return "⚠️ I'm having trouble connecting right now. Please check your API key."
+    except Exception as e:
+        return f"⚠️ Connection Error: Please ensure your API Key is set correctly."
 
-# -------------------- 3. USER INTERFACE --------------------
+# -------------------- 4. MAIN USER INTERFACE --------------------
 st.title("💬 MiRAG Chat")
-st.subheader("Developed by Mir MUHAMMAD Rafique & Hasnain Ali Raza")
+st.subheader("Official Chat Interface")
 
-# Sidebar for extra info
-with st.sidebar:
-    st.title("Bot Info")
-    st.write("This is a general-purpose chatbot for open conversation.")
-    if st.button("Clear Chat"):
-        st.session_state.messages = []
-        st.rerun()
-
-# Initialize Chat History
+# Initialize Session State
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Assalam o Alaikum! I am MiRAG. Let's chat!"}]
+    st.session_state.messages = [{"role": "assistant", "content": "Assalam o Alaikum! I am MiRAG. How can I help you and Hasnain today?"}]
 
-# Display the conversation
+# Display Conversation History
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# Handle User Input
-if user_input := st.chat_input("Say something..."):
-    # Add user message to state and display
+# User Input
+if user_input := st.chat_input("Type your message here..."):
+    # Save user message
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
     
-    # Generate and display assistant response
+    # Get AI Response
     with st.chat_message("assistant"):
         with st.spinner("MiRAG is typing..."):
             ans = mirag_chat(user_input, st.session_state.messages[:-1])
             st.markdown(ans)
     
-    # Save assistant response to state
+    # Save assistant message
     st.session_state.messages.append({"role": "assistant", "content": ans})
