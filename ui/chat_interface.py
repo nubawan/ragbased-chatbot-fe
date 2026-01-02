@@ -221,10 +221,7 @@ class ChatInterface:
         )
 
         # Render sidebar
-        sidebar_values = render_sidebar(
-            api_key_configured=self.api_key_configured,
-            show_settings=True,
-        )
+        render_sidebar()
 
         # Main header
         render_header(

@@ -191,19 +191,12 @@ def render_input_area(
     return user_input or ""
 
 
-def render_sidebar(
-    api_key_configured: bool = True,
-    show_settings: bool = True,
-) -> dict:
+def render_sidebar() -> dict:
     """
-    Render the sidebar with settings and info.
-
-    Args:
-        api_key_configured: Whether API key is configured
-        show_settings: Whether to show settings section
+    Render the sidebar with title and about info.
 
     Returns:
-        Dictionary of sidebar values
+        Empty dictionary
     """
     with st.sidebar:
         st.markdown(f"""
@@ -225,46 +218,11 @@ def render_sidebar(
         </div>
         """, unsafe_allow_html=True)
 
-        result = {}
-
-        # API Key status
-        st.subheader("Configuration")
-        if api_key_configured:
-            st.success("Groq API Key: Configured")
-        else:
-            st.error("Groq API Key: Missing")
-            st.info("Please add GROQ_API_KEY to:")
-            st.code(".streamlit/secrets.toml")
-
-        result["api_key_configured"] = api_key_configured
-
-        if show_settings:
-            st.subheader("Settings")
-
-            # Model selection (future feature)
-            result["model"] = st.selectbox(
-                "Model",
-                ["llama-3.1-8b-instant", "llama-3.1-70b-versatile", "mixtral-8x7b-32768"],
-                index=0,
-                disabled=True,  # For future implementation
-                help="Model selection coming soon",
-            )
-
-            # Data sources info
-            st.subheader("Data Sources")
-            st.info("""
-            **PDF Documents**
-            Academic Policy Manual
-
-            **Website**
-            iqra.edu.pk/iu-policies/
-            """)
-
         # About section
         st.markdown("---")
         st.markdown("""
         <div style="text-align: center; padding: 20px 0;">
-            <div style="font-size: 12px; color: {COLORS['text_tertiary']};">
+            <div style="font-size: 12px; color: {text_tertiary};">
                 <strong>{app_title}</strong><br>
                 RAG-based Policy Assistant<br>
                 <br>
@@ -273,7 +231,7 @@ def render_sidebar(
         </div>
         """.format(app_title=get_ui_config().app_title, **COLORS), unsafe_allow_html=True)
 
-    return result
+    return {}
 
 
 def render_footer() -> None:
