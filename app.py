@@ -4,7 +4,7 @@ import pdfplumber
 import requests
 import datetime
 
-# -------------------- 1. BRANDING & CONFIG --------------------
+# -------------------- 1. IDENTITY & CONFIG --------------------
 st.set_page_config(page_title="MiRAG | Academic Assistant", layout="centered", page_icon="🎓")
 
 # API Key Handling (Fetch from Streamlit Secrets)
@@ -13,15 +13,15 @@ if "GROQ_API_KEY" in st.secrets:
 else:
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-# --- THE PROPER PATH ---
-# This looks for the file in the same GitHub folder as this script
+# --- FILE PATH ---
+# Connects to the manual uploaded on GitHub
 PDF_FILENAME = "Academic-Policy-Manual-for-Students2.pdf"
 MODEL_NAME = "llama-3.1-8b-instant"
 
 # -------------------- 2. AUTOMATIC PDF INDEXING --------------------
-@st.cache_data(show_spinner="MiRAG is connecting to the Policy Manual...")
+@st.cache_data(show_spinner="MiRAG is indexing the Policy Manual...")
 def load_and_index_manual():
-    # Verify if the file exists in the container
+    # Verify if the file exists in the GitHub root folder
     if not os.path.exists(PDF_FILENAME):
         return None
     
@@ -48,7 +48,7 @@ def load_and_index_manual():
     except Exception:
         return None
 
-# Load chunks immediately
+# Load policy data immediately
 policy_chunks = load_and_index_manual()
 
 # -------------------- 3. RETRIEVAL & CHAT LOGIC --------------------
@@ -56,6 +56,7 @@ def get_context(query):
     if not policy_chunks:
         return ""
     
+    # Keyword search to find relevant policy sections
     query_words = set(query.lower().split())
     matches = []
     for chunk in policy_chunks:
@@ -70,17 +71,20 @@ def ask_mirag(question, history):
     context = get_context(question)
     today = datetime.datetime.now().strftime("%d %B %Y")
     
-    # Identity Prompt for the group
+    # SYSTEM PROMPT: Set identity as MiRAG and credit the developers
     system_prompt = f"""
-    You are MiRAG, an Academic Assistant.
-    Created by: Mir MUHAMMAD Rafique and Hasnain Ali Raza.
+    You are MiRAG, a professional Academic AI Assistant.
+    Developed by: Mir MUHAMMAD and Hasnain Ali Raza.
     Current Date: {today}.
     
-    Use this Context from the Policy Manual:
+    Instructions:
+    - Use the provided PDF context to answer questions about university policy.
+    - If the context contains specific numbers (GPA, %, attendance hours), include them.
+    - If the context does not contain the answer, use your general knowledge but clarify it is general info.
+    - Do NOT mention "searching" or "researching." Provide direct answers.
+
+    ACADEMIC POLICY CONTEXT:
     {context}
-    
-    Instructions: Provide precise details from the manual. 
-    If information is missing, inform the user clearly.
     """
 
     messages = [{"role": "system", "content": system_prompt}] + history + [{"role": "user", "content": question}]
@@ -93,34 +97,37 @@ def ask_mirag(question, history):
         )
         return response.json()["choices"][0]["message"]["content"]
     except:
-        return "⚠️ Connection Error. Check the API Key in Secrets."
+        return "⚠️ Connection Error. Mir & Hasnain, please check the Groq API Key settings!"
 
-# -------------------- 4. USER INTERFACE --------------------
+# -------------------- 4. USER INTERFACE (UI) --------------------
 st.title("🤖 MiRAG: Academic AI")
-st.subheader("Developed by Mir MUHAMMAD Rafique & Hasnain Ali Raza")
+st.subheader("Developed by Mir MUHAMMAD & Hasnain Ali Raza")
 
 with st.sidebar:
-    st.header("Connection Status")
+    st.header("System Status")
     if policy_chunks:
         st.success(f"✅ Linked to {PDF_FILENAME}")
+        st.info(f"Loaded {len(policy_chunks)} policy segments.")
     else:
-        st.error("❌ PDF Missing")
-        st.write(f"Ensure '{PDF_FILENAME}' is in the GitHub root folder.")
+        st.error("❌ PDF Manual Not Found")
+        st.write("Ensure the PDF is in the root directory on GitHub.")
 
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Assalam o Alaikum! I am MiRAG. I am connected to the Academic Policy Manual. Ask me anything!"}]
+    st.session_state.messages = [{"role": "assistant", "content": "Hello! I am MiRAG. I have been programmed by Mir MUHAMMAD and Hasnain Ali Raza to assist you with academic policies. How can I help you today?"}]
 
+# Display Chat History
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
+# User Input
 if prompt := st.chat_input("Ask about admissions, grading, or attendance..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Analyzing Policy Manual..."):
+        with st.spinner("MiRAG is analyzing the manual..."):
             answer = ask_mirag(prompt, st.session_state.messages[:-1])
             st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
