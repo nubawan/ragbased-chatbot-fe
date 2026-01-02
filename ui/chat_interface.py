@@ -215,7 +215,7 @@ class ChatInterface:
         # Page config
         st.set_page_config(
             page_title=self.ui_config.app_title,
-            page_icon="🤖",
+            page_icon="🧠",
             layout="centered",
             initial_sidebar_state="expanded",
         )
