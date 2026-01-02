@@ -1,162 +1,104 @@
-import os
 import streamlit as st
-import pdfplumber
-import requests
-import datetime
+import os
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_community.vectorstores import FAISS
+from langchain.chains import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_core.prompts import ChatPromptTemplate
 
-# -------------------- 1. IDENTITY & CONFIG --------------------
-st.set_page_config(page_title="HasMir | Academic Assistant", layout="centered", page_icon="🤖")
+# --- BRANDING & UI ---
+st.set_page_config(page_title="MiRAG | PDF Chat", page_icon="🔮")
 
-# Securely fetch API Key from Streamlit Secrets
-GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
+st.markdown("""
+    <style>
+    .developer-tag { text-align: right; color: #6c757d; font-size: 14px; margin-top: -20px; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# --- GITHUB CONNECTED PATH ---
-# Looks for the file in the same main folder on GitHub
-PDF_PATH = "Academic-Policy-Manual-for-Students2.pdf"
-MODEL_NAME = "llama-3.1-8b-instant"
+st.title("🔮 MiRAG")
+st.markdown("<div class='developer-tag'>Developed By HasMir</div>", unsafe_allow_html=True)
+st.markdown("---")
 
-
-# -------------------- 2. LOAD + CHUNK PDF --------------------
-@st.cache_data(show_spinner="HasMir is reading the Policy Manual...")
-def load_chunks(max_chars: int = 700):
-    if not os.path.exists(PDF_PATH):
-        return None
-        
-    text = ""
-    with pdfplumber.open(PDF_PATH) as pdf:
-        for page in pdf.pages:
-            tx = page.extract_text()
-            if tx:
-                text += tx + "\n"
-
-    raw_parts = [p.strip() for p in text.split("\n") if p.strip()]
-    chunks = []
-    buf = ""
-
-    for part in raw_parts:
-        if len(buf) + len(part) <= max_chars:
-            buf += " " + part
-        else:
-            chunks.append(buf.strip())
-            buf = part
-
-    if buf:
-        chunks.append(buf.strip())
-
-    return chunks
-
-pdf_chunks = load_chunks()
-
-
-# -------------------- 3. RETRIEVAL LOGIC --------------------
-def retrieve_context(query: str, top_k: int = 3):
-    if not pdf_chunks:
-        return ""
-        
-    q_words = set(query.lower().split())
-    scored = []
-
-    for ch in pdf_chunks:
-        ch_words = set(ch.lower().split())
-        score = len(q_words & ch_words)
-        if score > 0:
-            scored.append((score, ch))
-
-    if not scored:
-        return ""
-
-    scored.sort(reverse=True, key=lambda x: x[0])
-    return "\n\n".join([c for _, c in scored[:top_k]])
-
-
-# -------------------- 4. GROQ API CALL --------------------
-def llama_chat(messages):
-    url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": MODEL_NAME,
-        "messages": messages,
-        "temperature": 0.2, # Lower temperature for better factual accuracy
-    }
-
-    response = requests.post(url, json=payload, headers=headers)
-    result = response.json()
-
-    try:
-        return result["choices"][0]["message"]["content"]
-    except:
-        return "⚠️ Error connecting to HasMir's brain. Please check the API Key."
-
-
-# -------------------- 5. BRAIN (RAG LOGIC) --------------------
-def get_answer(question: str, history):
-    context = retrieve_context(question)
-    today = datetime.datetime.now().strftime("%d %B %Y")
-    
-    # System Prompt with Developer Credits
-    system_prompt = f"""
-You are HasMir, a professional Academic AI Assistant.
-Developed by: Mir MUHAMMAD and Hasnain Ali Raza.
-
-Rules:
-- Provide clear, direct, and helpful answers in English.
-- Use the PDF Context below as your main source for academic rules.
-- If information isn't in the PDF, use your general knowledge (Current Date: {today}).
-- Do NOT say "I am searching" or "I am looking at the PDF". Just answer.
-
-PDF Context:
----------------------
-{context}
----------------------
-"""
-
-    messages = [{"role": "system", "content": system_prompt}]
-    for m in history[-6:]:
-        messages.append(m)
-    messages.append({"role": "user", "content": question})
-
-    return llama_chat(messages)
-
-
-# -------------------- 6. STREAMLIT UI --------------------
-st.title("🤖 HasMir's ChatBot")
-st.caption("Official Academic Assistant | Developed by Mir MUHAMMAD & Hasnain Ali Raza")
-
-# Sidebar Status
+# --- SIDEBAR: PDF MANAGEMENT ---
 with st.sidebar:
-    st.header("System Status")
-    if pdf_chunks:
-        st.success(f"✅ Linked to Policy Manual")
-    else:
-        st.error("❌ PDF Manual Not Found")
-        st.info("Check if 'Academic-Policy-Manual-for-Students2.pdf' is in the GitHub folder.")
+    st.header("Settings")
+    api_key = st.text_input("Enter OpenAI API Key", type="password")
+    
+    st.subheader("Your Documents")
+    uploaded_pdfs = st.file_uploader("Upload PDF files", type="pdf", accept_multiple_files=True)
+    
+    if st.button("Clear Chat"):
+        st.session_state.messages = []
+        st.rerun()
 
+# --- RAG ENGINE ---
+def create_knowledge_base(pdfs, key):
+    all_docs = []
+    for pdf in pdfs:
+        # Temporary save to allow PyPDFLoader to read it
+        with open("temp.pdf", "wb") as f:
+            f.write(pdf.getbuffer())
+        loader = PyPDFLoader("temp.pdf")
+        all_docs.extend(loader.load())
+        os.remove("temp.pdf") # Clean up
+
+    # Split: Break PDF text into 1000-character chunks
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    final_chunks = text_splitter.split_documents(all_docs)
+
+    # Embed & Store: Convert text to math (vectors) and save in FAISS
+    embeddings = OpenAIEmbeddings(openai_api_key=key)
+    vectorstore = FAISS.from_documents(final_chunks, embeddings)
+    return vectorstore.as_retriever()
+
+# --- CHAT LOGIC ---
 if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "assistant",
-         "content": "Hello! I am HasMir. I have been developed by Mir MUHAMMAD and Hasnain Ali Raza to assist you with academic policies. How can I help you today?"}
-    ]
+    st.session_state.messages = []
 
-# Display chat messages
+# Display history
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+    st.chat_message(msg["role"]).write(msg["content"])
 
-# User input
-user_input = st.chat_input("Ask me about grading, attendance, or admissions...")
+# User Input
+if prompt := st.chat_input("Ask a question about your PDFs"):
+    if not api_key:
+        st.error("Please provide an API Key in the sidebar.")
+    else:
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.chat_message("user").write(prompt)
 
-if user_input:
-    st.session_state.messages.append({"role": "user", "content": user_input})
+        with st.chat_message("assistant"):
+            with st.spinner("MiRAG is scanning documents..."):
+                try:
+                    # Initialize Brain
+                    llm = ChatOpenAI(model="gpt-4o-mini", openai_api_key=api_key)
+                    
+                    if uploaded_pdfs:
+                        # RAG Pipeline
+                        retriever = create_knowledge_base(uploaded_pdfs, api_key)
+                        
+                        system_prompt = (
+                            "You are MiRAG, a precise document assistant. "
+                            "Use the context below to answer. If the answer isn't in the context, "
+                            "say you don't know based on the files provided.\n\n{context}"
+                        )
+                        prompt_template = ChatPromptTemplate.from_messages([
+                            ("system", system_prompt),
+                            ("human", "{input}"),
+                        ])
+                        
+                        combine_docs_chain = create_stuff_documents_chain(llm, prompt_template)
+                        rag_chain = create_retrieval_chain(retriever, combine_docs_chain)
+                        
+                        response = rag_chain.invoke({"input": prompt})
+                        full_res = response["answer"]
+                    else:
+                        # Fallback to general AI if no PDF
+                        full_res = llm.invoke(prompt).content
 
-    with st.chat_message("user"):
-        st.markdown(user_input)
-
-    with st.chat_message("assistant"):
-        with st.spinner("HasMir is thinking..."):
-            answer = get_answer(user_input, st.session_state.messages[:-1])
-        st.markdown(answer)
-
-    st.session_state.messages.append({"role": "assistant", "content": answer})
+                    st.write(full_res)
+                    st.session_state.messages.append({"role": "assistant", "content": full_res})
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
