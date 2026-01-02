@@ -1,0 +1,23 @@
+# Z.M.ai - Streamlit Configuration
+
+[theme]
+primaryColor = "#8b5cf6"
+backgroundColor = "#fafafa"
+secondaryBackgroundColor = "#f5f5f7"
+textColor = "#111111"
+font = "sans serif"
+
+[client]
+showErrorDetails = false
+maxUploadSize = 200
+
+[server]
+maxUploadSize = 200
+headless = true
+enableCORS = false
+enableXsrfProtection = true
+
+[browser]
+gatherUsageStats = false
+serverAddress = "localhost"
+serverPort = 8501

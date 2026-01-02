@@ -1,4 +1,25 @@
-streamlit
-pdfplumber
-tavily-python
-groq==0.11.0
+# Z.M.ai - RAG-based Chatbot Dependencies
+
+# Core Framework
+streamlit>=1.28.0
+python-dotenv>=1.0.0
+
+# Document Processing
+pypdf>=3.17.0
+pdfplumber>=0.10.0
+beautifulsoup4>=4.12.0
+trafilatura>=1.6.0
+lxml>=4.9.0
+
+# RAG / Vector Store
+sentence-transformers>=2.2.0
+faiss-cpu>=1.7.4
+numpy>=1.24.0
+
+# LLM Integration
+groq>=0.11.0
+requests>=2.31.0
+
+# Utilities
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
